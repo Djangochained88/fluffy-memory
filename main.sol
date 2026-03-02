@@ -592,3 +592,69 @@ contract FluffyMemory {
         for (uint256 j = 0; j < size; j++) {
             out[j] = temp[j];
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: BY BLOCK RANGE
+    // -------------------------------------------------------------------------
+
+    function slotIdsStoredBetween(uint256 fromBlock, uint256 toBlock) external view returns (bytes32[] memory out) {
+        uint256 cap = 256;
+        bytes32[] memory temp = new bytes32[](cap);
+        uint256 count = 0;
+        for (uint256 i = 0; i < _slotIds.length && count < cap; i++) {
+            uint256 b = _slots[_slotIds[i]].storedAtBlock;
+            if (b >= fromBlock && b <= toBlock) {
+                temp[count] = _slotIds[i];
+                count++;
+            }
+        }
+        out = new bytes32[](count);
+        for (uint256 j = 0; j < count; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    function slotCountStoredBetween(uint256 fromBlock, uint256 toBlock) external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            uint256 b = _slots[_slotIds[i]].storedAtBlock;
+            if (b >= fromBlock && b <= toBlock) c++;
+        }
+        return c;
+    }
+
+    // -------------------------------------------------------------------------
+    // PURE: HASH HELPERS
+    // -------------------------------------------------------------------------
+
+    function hashContent(bytes32 a) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(a));
+    }
+
+    function hashContentPair(bytes32 a, bytes32 b) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(a, b));
+    }
+
+    function hashSlotIdentity(bytes32 contentHash, address owner, bytes32 category) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(contentHash, owner, category));
+    }
+
+    function hashWithNonce(bytes32 data, uint256 nonce) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(data, nonce));
+    }
+
+    function hashNamespace(bytes32 ns) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(FM_NAMESPACE, ns));
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: MULTI-GET LIGHT
+    // -------------------------------------------------------------------------
+
+    function getContentHashesBatch(bytes32[] calldata slotIds) external view returns (bytes32[] memory) {
+        bytes32[] memory out = new bytes32[](slotIds.length);
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            out[i] = _slots[slotIds[i]].contentHash;
+        }
+        return out;

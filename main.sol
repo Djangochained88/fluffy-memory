@@ -394,3 +394,69 @@ contract FluffyMemory {
         out = new bytes32[](end - offset);
         for (uint256 i = offset; i < end; i++) {
             out[i - offset] = arr[i];
+        }
+    }
+
+    function slotIdsByCategoryPaginated(bytes32 category, uint256 offset, uint256 limit) external view returns (bytes32[] memory out) {
+        bytes32[] storage arr = _slotIdsByCategory[category];
+        if (offset >= arr.length) return new bytes32[](0);
+        uint256 end = offset + limit;
+        if (end > arr.length) end = arr.length;
+        out = new bytes32[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            out[i - offset] = arr[i];
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // HASH & INDEX HELPERS
+    // -------------------------------------------------------------------------
+
+    function computeSlotId(bytes32 contentHash, address owner, uint256 nonce) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(contentHash, owner, nonce));
+    }
+
+    function computeCategoryHash(string calldata label) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(label));
+    }
+
+    function verifyContentHash(bytes32 slotId, bytes32 contentHash) external view returns (bool) {
+        return _slots[slotId].contentHash == contentHash;
+    }
+
+    function namespaceHash() external pure returns (bytes32) {
+        return FM_NAMESPACE;
+    }
+
+    function versionHash() external pure returns (bytes32) {
+        return FM_VERSION;
+    }
+
+    function deployBlockNumber() external view returns (uint256) {
+        return deployBlock;
+    }
+
+    // -------------------------------------------------------------------------
+    // NODE REGISTRATION (guardian)
+    // -------------------------------------------------------------------------
+
+    function registerNode(address node) external onlyGuardian {
+        if (node == address(0)) revert FM_ZeroAddress();
+        if (_nodes[node]) return;
+        if (_nodeList.length >= FM_MAX_NODES) revert FM_MaxSlotsReached();
+        _nodes[node] = true;
+        _nodeList.push(node);
+        nodeCount = _nodeList.length;
+        emit NodeRegistered(node, _nodeList.length - 1, block.number);
+    }
+
+    function unregisterNode(address node) external onlyGuardian {
+        if (!_nodes[node]) return;
+        _nodes[node] = false;
+        for (uint256 i = 0; i < _nodeList.length; i++) {
+            if (_nodeList[i] == node) {
+                _nodeList[i] = _nodeList[_nodeList.length - 1];
+                _nodeList.pop();
+                break;
+            }
+        }

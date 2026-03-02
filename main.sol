@@ -64,3 +64,69 @@ contract FluffyMemory {
 
     address public immutable guardian;
     address public immutable archivist;
+    address public immutable nodeA;
+    address public immutable nodeB;
+    address public immutable nodeC;
+    uint256 public immutable deployBlock;
+
+    // -------------------------------------------------------------------------
+    // STATE
+    // -------------------------------------------------------------------------
+
+    struct MemorySlot {
+        bytes32 contentHash;
+        address owner;
+        uint256 storedAtBlock;
+        bytes32 category;
+        bool sealed;
+        uint256 replicaCount;
+    }
+
+    mapping(bytes32 => MemorySlot) private _slots;
+    bytes32[] private _slotIds;
+    uint256 public slotCount;
+
+    mapping(address => bytes32[]) private _slotIdsByOwner;
+    mapping(address => uint256) private _slotCountByOwner;
+
+    mapping(bytes32 => bytes32[]) private _slotIdsByCategory;
+    mapping(address => bool) private _nodes;
+    address[] private _nodeList;
+    uint256 public nodeCount;
+
+    mapping(bytes32 => bool) private _namespacePaused;
+    uint256 public maxSlotsPerOwner = 1_000;
+    uint256 private _reentrancyLock;
+
+    // -------------------------------------------------------------------------
+    // CONSTRUCTOR
+    // -------------------------------------------------------------------------
+
+    constructor() {
+        guardian = address(0x4F7aB2c5E8d1F3a6C9e0B4d7A1c8E2f5B9a3D6C0e);
+        archivist = address(0x6C1eA9d4F7b0B3E8a2D5c9F1e4A7b0C3d6E9f2A5);
+        nodeA = address(0x8E3bD6f9A2c5E0d1F4a7B9c2E5f8A1d4C7e0B3F6);
+        nodeB = address(0xA1d4F7b0C3e6E9a2B5c8D1f4A7e0B3D6C9f2E5a8);
+        nodeC = address(0x2B5e8A1d4F7c0E3b6D9f2A5c8E1b4D7a0C3F6e9B);
+        deployBlock = block.number;
+        if (guardian == address(0) || archivist == address(0)) revert FM_ZeroAddress();
+        _nodes[nodeA] = true;
+        _nodes[nodeB] = true;
+        _nodes[nodeC] = true;
+        _nodeList.push(nodeA);
+        _nodeList.push(nodeB);
+        _nodeList.push(nodeC);
+        nodeCount = 3;
+    }
+
+    // -------------------------------------------------------------------------
+    // MODIFIERS
+    // -------------------------------------------------------------------------
+
+    modifier onlyGuardian() {
+        if (msg.sender != guardian) revert FM_NotGuardian();
+        _;
+    }
+
+    modifier onlyArchivist() {
+        if (msg.sender != archivist) revert FM_NotArchivist();

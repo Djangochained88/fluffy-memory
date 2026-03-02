@@ -262,3 +262,69 @@ contract FluffyMemory {
         _namespacePaused[namespaceId] = paused;
         emit NamespacePaused(namespaceId, paused, block.number);
     }
+
+    function purgeSlot(bytes32 slotId) external onlyArchivist nonReentrant {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        address owner = s.owner;
+        bytes32 category = s.category;
+        delete _slots[slotId];
+        slotCount--;
+        _slotCountByOwner[owner]--;
+        emit SlotPurged(slotId, msg.sender, block.number);
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: BY ID
+    // -------------------------------------------------------------------------
+
+    function getSlot(bytes32 slotId) external view returns (bytes32 contentHash, address owner, uint256 storedAtBlock, bytes32 category, bool sealed, uint256 replicaCount) {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        return (s.contentHash, s.owner, s.storedAtBlock, s.category, s.sealed, s.replicaCount);
+    }
+
+    function getContentHash(bytes32 slotId) external view returns (bytes32) {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        return s.contentHash;
+    }
+
+    function getOwner(bytes32 slotId) external view returns (address) {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        return s.owner;
+    }
+
+    function getCategory(bytes32 slotId) external view returns (bytes32) {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        return s.category;
+    }
+
+    function isSealed(bytes32 slotId) external view returns (bool) {
+        return _slots[slotId].sealed;
+    }
+
+    function getReplicaCount(bytes32 slotId) external view returns (uint256) {
+        return _slots[slotId].replicaCount;
+    }
+
+    function slotExists(bytes32 slotId) external view returns (bool) {
+        return _slots[slotId].storedAtBlock != 0;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: LISTS
+    // -------------------------------------------------------------------------
+
+    function getSlotIdAt(uint256 index) external view returns (bytes32) {
+        if (index >= _slotIds.length) revert FM_SlotNotFound();
+        return _slotIds[index];
+    }
+
+    function getSlotIdsByOwner(address owner) external view returns (bytes32[] memory) {
+        return _slotIdsByOwner[owner];
+    }
+
+    function getSlotCountByOwner(address owner) external view returns (uint256) {

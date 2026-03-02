@@ -328,3 +328,69 @@ contract FluffyMemory {
     }
 
     function getSlotCountByOwner(address owner) external view returns (uint256) {
+        return _slotCountByOwner[owner];
+    }
+
+    function getSlotIdsByCategory(bytes32 category) external view returns (bytes32[] memory) {
+        return _slotIdsByCategory[category];
+    }
+
+    function getCategorySlotCount(bytes32 category) external view returns (uint256) {
+        return _slotIdsByCategory[category].length;
+    }
+
+    function getAllSlotIds() external view returns (bytes32[] memory) {
+        return _slotIds;
+    }
+
+    function getNodeAt(uint256 index) external view returns (address) {
+        if (index >= _nodeList.length) revert FM_NodeNotRegistered();
+        return _nodeList[index];
+    }
+
+    function isNode(address account) external view returns (bool) {
+        return _nodes[account];
+    }
+
+    function isNamespacePaused(bytes32 namespaceId) external view returns (bool) {
+        return _namespacePaused[namespaceId];
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: BATCH
+    // -------------------------------------------------------------------------
+
+    function getSlotsBatch(bytes32[] calldata slotIds) external view returns (
+        bytes32[] memory contentHashes,
+        address[] memory owners,
+        uint256[] memory storedAtBlocks,
+        bytes32[] memory categories,
+        bool[] memory sealedFlags,
+        uint256[] memory replicaCounts
+    ) {
+        uint256 n = slotIds.length;
+        contentHashes = new bytes32[](n);
+        owners = new address[](n);
+        storedAtBlocks = new uint256[](n);
+        categories = new bytes32[](n);
+        sealedFlags = new bool[](n);
+        replicaCounts = new uint256[](n);
+        for (uint256 i = 0; i < n; i++) {
+            MemorySlot storage s = _slots[slotIds[i]];
+            contentHashes[i] = s.contentHash;
+            owners[i] = s.owner;
+            storedAtBlocks[i] = s.storedAtBlock;
+            categories[i] = s.category;
+            sealedFlags[i] = s.sealed;
+            replicaCounts[i] = s.replicaCount;
+        }
+    }
+
+    function slotIdsByOwnerPaginated(address owner, uint256 offset, uint256 limit) external view returns (bytes32[] memory out) {
+        bytes32[] storage arr = _slotIdsByOwner[owner];
+        if (offset >= arr.length) return new bytes32[](0);
+        uint256 end = offset + limit;
+        if (end > arr.length) end = arr.length;
+        out = new bytes32[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            out[i - offset] = arr[i];

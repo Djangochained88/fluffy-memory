@@ -658,3 +658,69 @@ contract FluffyMemory {
             out[i] = _slots[slotIds[i]].contentHash;
         }
         return out;
+    }
+
+    function getOwnersBatch(bytes32[] calldata slotIds) external view returns (address[] memory) {
+        address[] memory out = new address[](slotIds.length);
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            out[i] = _slots[slotIds[i]].owner;
+        }
+        return out;
+    }
+
+    function getCategoriesBatch(bytes32[] calldata slotIds) external view returns (bytes32[] memory) {
+        bytes32[] memory out = new bytes32[](slotIds.length);
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            out[i] = _slots[slotIds[i]].category;
+        }
+        return out;
+    }
+
+    function getSealedBatch(bytes32[] calldata slotIds) external view returns (bool[] memory) {
+        bool[] memory out = new bool[](slotIds.length);
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            out[i] = _slots[slotIds[i]].sealed;
+        }
+        return out;
+    }
+
+    function getReplicaCountsBatch(bytes32[] calldata slotIds) external view returns (uint256[] memory) {
+        uint256[] memory out = new uint256[](slotIds.length);
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            out[i] = _slots[slotIds[i]].replicaCount;
+        }
+        return out;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: EXISTS BATCH
+    // -------------------------------------------------------------------------
+
+    function slotsExistBatch(bytes32[] calldata slotIds) external view returns (bool[] memory) {
+        bool[] memory out = new bool[](slotIds.length);
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            out[i] = _slots[slotIds[i]].storedAtBlock != 0;
+        }
+        return out;
+    }
+
+    function countExisting(bytes32[] calldata slotIds) external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            if (_slots[slotIds[i]].storedAtBlock != 0) c++;
+        }
+        return c;
+    }
+
+    // -------------------------------------------------------------------------
+    // META & CONSTANTS
+    // -------------------------------------------------------------------------
+
+    function maxSlots() external pure returns (uint256) {
+        return FM_MAX_SLOTS;
+    }
+
+    function maxSlotsPerOwnerLimit() external pure returns (uint256) {
+        return FM_MAX_SLOTS_PER_OWNER;
+    }
+

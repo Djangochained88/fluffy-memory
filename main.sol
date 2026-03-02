@@ -526,3 +526,69 @@ contract FluffyMemory {
         return _slots[slotId].storedAtBlock != 0;
     }
 
+    function getStoredAtBlock(bytes32 slotId) external view returns (uint256) {
+        return _slots[slotId].storedAtBlock;
+    }
+
+    function contentHashMatches(bytes32 slotId, bytes32 hash) external view returns (bool) {
+        return _slots[slotId].contentHash == hash;
+    }
+
+    function slotOwnerIs(bytes32 slotId, address account) external view returns (bool) {
+        return _slots[slotId].owner == account;
+    }
+
+    function slotCategoryIs(bytes32 slotId, bytes32 category) external view returns (bool) {
+        return _slots[slotId].category == category;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: PAGINATED GLOBAL
+    // -------------------------------------------------------------------------
+
+    function getSlotIdsPaginated(uint256 offset, uint256 limit) external view returns (bytes32[] memory out) {
+        if (offset >= _slotIds.length) return new bytes32[](0);
+        uint256 end = offset + limit;
+        if (end > _slotIds.length) end = _slotIds.length;
+        out = new bytes32[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            out[i - offset] = _slotIds[i];
+        }
+    }
+
+    function getSlotIdsSealedPaginated(uint256 offset, uint256 limit) external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](limit);
+        uint256 count = 0;
+        for (uint256 i = 0; i < _slotIds.length && count < limit; i++) {
+            if (_slots[_slotIds[i]].sealed) {
+                if (count >= offset) {
+                    temp[count - offset] = _slotIds[i];
+                }
+                count++;
+            }
+        }
+        uint256 size = count > offset ? count - offset : 0;
+        if (size > limit) size = limit;
+        out = new bytes32[](size);
+        for (uint256 j = 0; j < size; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    function getSlotIdsUnsealedPaginated(uint256 offset, uint256 limit) external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](limit);
+        uint256 count = 0;
+        for (uint256 i = 0; i < _slotIds.length && count < offset + limit; i++) {
+            if (!_slots[_slotIds[i]].sealed) {
+                if (count >= offset && count - offset < limit) {
+                    temp[count - offset] = _slotIds[i];
+                }
+                count++;
+            }
+        }
+        uint256 size = count > offset ? count - offset : 0;
+        if (size > limit) size = limit;
+        out = new bytes32[](size);
+        for (uint256 j = 0; j < size; j++) {
+            out[j] = temp[j];
+        }

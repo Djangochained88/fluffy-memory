@@ -130,3 +130,69 @@ contract FluffyMemory {
 
     modifier onlyArchivist() {
         if (msg.sender != archivist) revert FM_NotArchivist();
+        _;
+    }
+
+    modifier onlyNode() {
+        if (!_nodes[msg.sender]) revert FM_NotNode();
+        _;
+    }
+
+    modifier whenNotPaused(bytes32 namespaceId) {
+        if (_namespacePaused[namespaceId]) revert FM_NamespacePaused();
+        _;
+    }
+
+    modifier nonReentrant() {
+        if (_reentrancyLock != 0) revert FM_ReentrantCall();
+        _reentrancyLock = 1;
+        _;
+        _reentrancyLock = 0;
+    }
+
+    // -------------------------------------------------------------------------
+    // CORE: STORE & SEAL
+    // -------------------------------------------------------------------------
+
+    function store(bytes32 slotId, bytes32 contentHash, bytes32 category) external nonReentrant whenNotPaused(FM_NAMESPACE) returns (bool) {
+        if (slotId == bytes32(0)) revert FM_ZeroSlot();
+        if (contentHash == bytes32(0)) revert FM_ZeroHash();
+        if (_slots[slotId].storedAtBlock != 0) revert FM_DuplicateSlot();
+        if (slotCount >= FM_MAX_SLOTS) revert FM_MaxSlotsReached();
+        if (_slotCountByOwner[msg.sender] >= maxSlotsPerOwner) revert FM_MaxSlotsPerOwnerReached();
+
+        _slots[slotId] = MemorySlot({
+            contentHash: contentHash,
+            owner: msg.sender,
+            storedAtBlock: block.number,
+            category: category,
+            sealed: false,
+            replicaCount: 0
+        });
+        _slotIds.push(slotId);
+        slotCount++;
+        _slotIdsByOwner[msg.sender].push(slotId);
+        _slotCountByOwner[msg.sender]++;
+        _slotIdsByCategory[category].push(slotId);
+
+        emit SlotStored(slotId, contentHash, msg.sender, category, block.number);
+        return true;
+    }
+
+    function seal(bytes32 slotId) external nonReentrant {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        if (s.owner != msg.sender && msg.sender != archivist) revert FM_NotOwner();
+        if (s.sealed) revert FM_AlreadySealed();
+
+        s.sealed = true;
+        emit SlotSealed(slotId, msg.sender, block.number);
+    }
+
+    function attestReplica(bytes32 slotId) external onlyNode nonReentrant {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        s.replicaCount++;
+        emit ReplicaAttested(slotId, msg.sender, s.replicaCount, block.number);
+    }
+

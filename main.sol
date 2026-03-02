@@ -196,3 +196,69 @@ contract FluffyMemory {
         emit ReplicaAttested(slotId, msg.sender, s.replicaCount, block.number);
     }
 
+    function indexChunk(bytes32 slotId, uint256 shardIndex) external onlyNode nonReentrant {
+        if (_slots[slotId].storedAtBlock == 0) revert FM_SlotNotFound();
+        if (shardIndex >= FM_MAX_SHARDS_PER_SLOT) revert FM_InvalidShardIndex();
+        emit ChunkIndexed(slotId, shardIndex, msg.sender, block.number);
+    }
+
+    function updateCategory(bytes32 slotId, bytes32 newCategory) external nonReentrant {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        if (s.owner != msg.sender && msg.sender != archivist) revert FM_NotOwner();
+        if (s.sealed) revert FM_AlreadySealed();
+
+        bytes32 oldTag = s.category;
+        s.category = newCategory;
+        _slotIdsByCategory[newCategory].push(slotId);
+        emit CategoryTagged(slotId, oldTag, newCategory, block.number);
+    }
+
+    // -------------------------------------------------------------------------
+    // BATCH STORE
+    // -------------------------------------------------------------------------
+
+    function batchStore(bytes32[] calldata slotIds, bytes32[] calldata contentHashes, bytes32[] calldata categories) external nonReentrant whenNotPaused(FM_NAMESPACE) returns (uint256 stored) {
+        if (slotIds.length != contentHashes.length || contentHashes.length != categories.length) revert FM_InvalidBatchLength();
+        if (slotIds.length > FM_MAX_BATCH) revert FM_InvalidBatchLength();
+        if (slotCount + slotIds.length > FM_MAX_SLOTS) revert FM_MaxSlotsReached();
+        if (_slotCountByOwner[msg.sender] + slotIds.length > maxSlotsPerOwner) revert FM_MaxSlotsPerOwnerReached();
+
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            if (slotIds[i] == bytes32(0) || contentHashes[i] == bytes32(0)) continue;
+            if (_slots[slotIds[i]].storedAtBlock != 0) continue;
+
+            _slots[slotIds[i]] = MemorySlot({
+                contentHash: contentHashes[i],
+                owner: msg.sender,
+                storedAtBlock: block.number,
+                category: categories[i],
+                sealed: false,
+                replicaCount: 0
+            });
+            _slotIds.push(slotIds[i]);
+            slotCount++;
+            _slotIdsByOwner[msg.sender].push(slotIds[i]);
+            _slotCountByOwner[msg.sender]++;
+            _slotIdsByCategory[categories[i]].push(slotIds[i]);
+            stored++;
+            emit SlotStored(slotIds[i], contentHashes[i], msg.sender, categories[i], block.number);
+        }
+        if (stored > 0) emit BatchStored(stored, msg.sender, block.number);
+        return stored;
+    }
+
+    // -------------------------------------------------------------------------
+    // GUARDIAN / ARCHIVIST
+    // -------------------------------------------------------------------------
+
+    function setMaxSlotsPerOwner(uint256 newMax) external onlyGuardian {
+        uint256 prev = maxSlotsPerOwner;
+        maxSlotsPerOwner = newMax > FM_MAX_SLOTS_PER_OWNER ? FM_MAX_SLOTS_PER_OWNER : newMax;
+        emit MaxSlotsPerOwnerUpdated(prev, maxSlotsPerOwner, block.number);
+    }
+
+    function setNamespacePaused(bytes32 namespaceId, bool paused) external onlyGuardian {
+        _namespacePaused[namespaceId] = paused;
+        emit NamespacePaused(namespaceId, paused, block.number);
+    }

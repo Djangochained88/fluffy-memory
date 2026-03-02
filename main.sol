@@ -460,3 +460,69 @@ contract FluffyMemory {
                 break;
             }
         }
+        nodeCount = _nodeList.length;
+    }
+
+    function getNodeList() external view returns (address[] memory) {
+        return _nodeList;
+    }
+
+    // -------------------------------------------------------------------------
+    // BATCH SEAL & BATCH ATTEST
+    // -------------------------------------------------------------------------
+
+    function batchSeal(bytes32[] calldata slotIds) external nonReentrant {
+        for (uint256 i = 0; i < slotIds.length && i < FM_MAX_BATCH; i++) {
+            MemorySlot storage s = _slots[slotIds[i]];
+            if (s.storedAtBlock == 0) continue;
+            if (s.owner != msg.sender && msg.sender != archivist) continue;
+            if (s.sealed) continue;
+            s.sealed = true;
+            emit SlotSealed(slotIds[i], msg.sender, block.number);
+        }
+    }
+
+    function batchAttestReplica(bytes32[] calldata slotIds) external onlyNode nonReentrant {
+        for (uint256 i = 0; i < slotIds.length && i < FM_MAX_BATCH; i++) {
+            if (_slots[slotIds[i]].storedAtBlock == 0) continue;
+            _slots[slotIds[i]].replicaCount++;
+            emit ReplicaAttested(slotIds[i], msg.sender, _slots[slotIds[i]].replicaCount, block.number);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: STATS & FILTERS
+    // -------------------------------------------------------------------------
+
+    function totalSlotCount() external view returns (uint256) {
+        return _slotIds.length;
+    }
+
+    function sealedSlotCount() external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].sealed) c++;
+        }
+        return c;
+    }
+
+    function unsealedSlotCount() external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (!_slots[_slotIds[i]].sealed) c++;
+        }
+        return c;
+    }
+
+    function slotCountInCategory(bytes32 category) external view returns (uint256) {
+        return _slotIdsByCategory[category].length;
+    }
+
+    function ownerSlotCount(address owner) external view returns (uint256) {
+        return _slotCountByOwner[owner];
+    }
+
+    function hasSlot(bytes32 slotId) external view returns (bool) {
+        return _slots[slotId].storedAtBlock != 0;
+    }
+

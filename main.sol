@@ -1714,3 +1714,69 @@ contract FluffyMemory {
 
     // -------------------------------------------------------------------------
     // VIEW: FLUFFY MEMORY INDEX HELPERS (AI organised)
+    // -------------------------------------------------------------------------
+
+    function slotIdsOrderedByBlockAsc(uint256 limit) external view returns (bytes32[] memory out) {
+        uint256 n = _slotIds.length > limit ? limit : _slotIds.length;
+        if (n == 0) return new bytes32[](0);
+        out = new bytes32[](n);
+        for (uint256 i = 0; i < n; i++) {
+            out[i] = _slotIds[i];
+        }
+    }
+
+    function slotIdsOrderedByBlockDesc(uint256 limit) external view returns (bytes32[] memory out) {
+        uint256 len = _slotIds.length;
+        if (len == 0) return new bytes32[](0);
+        uint256 n = len > limit ? limit : len;
+        out = new bytes32[](n);
+        for (uint256 i = 0; i < n; i++) {
+            out[i] = _slotIds[len - 1 - i];
+        }
+    }
+
+    function firstSlotStored() external view returns (bytes32) {
+        if (_slotIds.length == 0) return bytes32(0);
+        return _slotIds[0];
+    }
+
+    function lastSlotStored() external view returns (bytes32) {
+        if (_slotIds.length == 0) return bytes32(0);
+        return _slotIds[_slotIds.length - 1];
+    }
+
+    function blockOfFirstSlot() external view returns (uint256) {
+        if (_slotIds.length == 0) return 0;
+        return _slots[_slotIds[0]].storedAtBlock;
+    }
+
+    function blockOfLastSlot() external view returns (uint256) {
+        if (_slotIds.length == 0) return 0;
+        return _slots[_slotIds[_slotIds.length - 1]].storedAtBlock;
+    }
+
+    function slotAtBlock(uint256 blockNum) external view returns (bytes32) {
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].storedAtBlock == blockNum) return _slotIds[i];
+        }
+        return bytes32(0);
+    }
+
+    function slotsStoredInBlock(uint256 blockNum) external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].storedAtBlock == blockNum) c++;
+        }
+        return c;
+    }
+
+    function distributedStorageReady(bytes32 slotId) external view returns (bool) {
+        return _slots[slotId].replicaCount >= 2 && _slots[slotId].sealed;
+    }
+
+    function slotsDistributedStorageReady() external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](_slotIds.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            MemorySlot storage s = _slots[_slotIds[i]];
+            if (s.replicaCount >= 2 && s.sealed) {

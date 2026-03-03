@@ -1120,3 +1120,69 @@ contract FluffyMemory {
 
     // -------------------------------------------------------------------------
     // PURE: ENCODING HELPERS
+    // -------------------------------------------------------------------------
+
+    function encodeSlotId(bytes32 contentHash, address owner, bytes32 category, uint256 nonce) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(contentHash, owner, category, nonce));
+    }
+
+    function encodeCategory(bytes32 a, bytes32 b) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(a, b));
+    }
+
+    function encodeContentHash(bytes memory data) external pure returns (bytes32) {
+        return keccak256(data);
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: CATEGORY LIST (unique categories from storage - linear)
+    // -------------------------------------------------------------------------
+
+    function getCategoriesForSlot(bytes32 slotId) external view returns (bytes32) {
+        return _slots[slotId].category;
+    }
+
+    function getOwnerForSlot(bytes32 slotId) external view returns (address) {
+        return _slots[slotId].owner;
+    }
+
+    function getContentHashForSlot(bytes32 slotId) external view returns (bytes32) {
+        return _slots[slotId].contentHash;
+    }
+
+    function getStoredBlockForSlot(bytes32 slotId) external view returns (uint256) {
+        return _slots[slotId].storedAtBlock;
+    }
+
+    function getSealedForSlot(bytes32 slotId) external view returns (bool) {
+        return _slots[slotId].sealed;
+    }
+
+    function getReplicasForSlot(bytes32 slotId) external view returns (uint256) {
+        return _slots[slotId].replicaCount;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: MULTI-CATEGORY
+    // -------------------------------------------------------------------------
+
+    function slotIdsInCategories(bytes32[] calldata categories) external view returns (bytes32[] memory out) {
+        uint256 total = 0;
+        for (uint256 c = 0; c < categories.length; c++) {
+            total += _slotIdsByCategory[categories[c]].length;
+        }
+        if (total > 512) total = 512;
+        bytes32[] memory temp = new bytes32[](total);
+        uint256 idx = 0;
+        for (uint256 c = 0; c < categories.length && idx < total; c++) {
+            bytes32[] storage arr = _slotIdsByCategory[categories[c]];
+            for (uint256 i = 0; i < arr.length && idx < total; i++) {
+                temp[idx] = arr[i];
+                idx++;
+            }
+        }
+        out = new bytes32[](idx);
+        for (uint256 j = 0; j < idx; j++) {
+            out[j] = temp[j];
+        }
+    }

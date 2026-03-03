@@ -1186,3 +1186,69 @@ contract FluffyMemory {
             out[j] = temp[j];
         }
     }
+
+    function totalSlotsInCategories(bytes32[] calldata categories) external view returns (uint256) {
+        uint256 t = 0;
+        for (uint256 c = 0; c < categories.length; c++) {
+            t += _slotIdsByCategory[categories[c]].length;
+        }
+        return t;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: OWNER MULTI
+    // -------------------------------------------------------------------------
+
+    function slotIdsForOwners(address[] calldata owners) external view returns (bytes32[] memory out) {
+        uint256 total = 0;
+        for (uint256 o = 0; o < owners.length; o++) {
+            total += _slotIdsByOwner[owners[o]].length;
+        }
+        if (total > 512) total = 512;
+        bytes32[] memory temp = new bytes32[](total);
+        uint256 idx = 0;
+        for (uint256 o = 0; o < owners.length && idx < total; o++) {
+            bytes32[] storage arr = _slotIdsByOwner[owners[o]];
+            for (uint256 i = 0; i < arr.length && idx < total; i++) {
+                temp[idx] = arr[i];
+                idx++;
+            }
+        }
+        out = new bytes32[](idx);
+        for (uint256 j = 0; j < idx; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    function totalSlotsForOwners(address[] calldata owners) external view returns (uint256) {
+        uint256 t = 0;
+        for (uint256 o = 0; o < owners.length; o++) {
+            t += _slotCountByOwner[owners[o]];
+        }
+        return t;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: SEALED/UNSEALED PAGINATION FIXED
+    // -------------------------------------------------------------------------
+
+    function sealedSlotIds(uint256 offset, uint256 limit) external view returns (bytes32[] memory out) {
+        uint256 collected = 0;
+        uint256 written = 0;
+        uint256 maxOut = limit > 256 ? 256 : limit;
+        out = new bytes32[](maxOut);
+        for (uint256 i = 0; i < _slotIds.length && written < maxOut; i++) {
+            if (_slots[_slotIds[i]].sealed) {
+                if (collected >= offset) {
+                    out[written] = _slotIds[i];
+                    written++;
+                }
+                collected++;
+            }
+        }
+        if (written < maxOut) {
+            bytes32[] memory trimmed = new bytes32[](written);
+            for (uint256 j = 0; j < written; j++) trimmed[j] = out[j];
+            return trimmed;
+        }
+        return out;

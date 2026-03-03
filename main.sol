@@ -1252,3 +1252,69 @@ contract FluffyMemory {
             return trimmed;
         }
         return out;
+    }
+
+    function unsealedSlotIds(uint256 offset, uint256 limit) external view returns (bytes32[] memory out) {
+        uint256 collected = 0;
+        uint256 written = 0;
+        uint256 maxOut = limit > 256 ? 256 : limit;
+        out = new bytes32[](maxOut);
+        for (uint256 i = 0; i < _slotIds.length && written < maxOut; i++) {
+            if (!_slots[_slotIds[i]].sealed) {
+                if (collected >= offset) {
+                    out[written] = _slotIds[i];
+                    written++;
+                }
+                collected++;
+            }
+        }
+        if (written < maxOut) {
+            bytes32[] memory trimmed = new bytes32[](written);
+            for (uint256 j = 0; j < written; j++) trimmed[j] = out[j];
+            return trimmed;
+        }
+        return out;
+    }
+
+    // -------------------------------------------------------------------------
+    // PURE: UTILITY HASHES
+    // -------------------------------------------------------------------------
+
+    function hashBytes(bytes calldata data) external pure returns (bytes32) {
+        return keccak256(data);
+    }
+
+    function hashPacked(bytes32 a, bytes32 b) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(a, b));
+    }
+
+    function hashAddress(address a) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(a));
+    }
+
+    function hashUint(uint256 n) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(n));
+    }
+
+    function slotIdV1(bytes32 contentHash, address owner) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked("v1", contentHash, owner));
+    }
+
+    function slotIdV2(bytes32 contentHash, address owner, uint256 timestamp) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked("v2", contentHash, owner, timestamp));
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: SLOT METADATA LIGHT
+    // -------------------------------------------------------------------------
+
+    function getMetadata(bytes32 slotId) external view returns (bytes32 contentHash, address owner, bytes32 category) {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        return (s.contentHash, s.owner, s.category);
+    }
+
+    function getMetadataBatch(bytes32[] calldata slotIds) external view returns (
+        bytes32[] memory contentHashes,
+        address[] memory owners,
+        bytes32[] memory categories

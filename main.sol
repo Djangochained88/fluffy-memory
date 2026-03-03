@@ -1450,3 +1450,69 @@ contract FluffyMemory {
     function constantNamespace() external pure returns (bytes32) {
         return FM_NAMESPACE;
     }
+
+    function constantVersion() external pure returns (bytes32) {
+        return FM_VERSION;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: NODE INDEX
+    // -------------------------------------------------------------------------
+
+    function nodeAtIndex(uint256 index) external view returns (address) {
+        if (index >= _nodeList.length) revert FM_NodeNotRegistered();
+        return _nodeList[index];
+    }
+
+    function indexOfNode(address node) external view returns (uint256) {
+        for (uint256 i = 0; i < _nodeList.length; i++) {
+            if (_nodeList[i] == node) return i;
+        }
+        revert FM_NodeNotRegistered();
+    }
+
+    function nodeIsRegistered(address node) external view returns (bool) {
+        return _nodes[node];
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: BATCH EXISTS
+    // -------------------------------------------------------------------------
+
+    function allSlotsExist(bytes32[] calldata slotIds) external view returns (bool) {
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            if (_slots[slotIds[i]].storedAtBlock == 0) return false;
+        }
+        return slotIds.length > 0;
+    }
+
+    function anySlotExists(bytes32[] calldata slotIds) external view returns (bool) {
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            if (_slots[slotIds[i]].storedAtBlock != 0) return true;
+        }
+        return false;
+    }
+
+    function missingSlotIds(bytes32[] calldata slotIds) external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](slotIds.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            if (_slots[slotIds[i]].storedAtBlock == 0) {
+                temp[count] = slotIds[i];
+                count++;
+            }
+        }
+        out = new bytes32[](count);
+        for (uint256 j = 0; j < count; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    function existingSlotIds(bytes32[] calldata slotIds) external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](slotIds.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            if (_slots[slotIds[i]].storedAtBlock != 0) {
+                temp[count] = slotIds[i];
+                count++;
+            }

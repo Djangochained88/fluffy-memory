@@ -988,3 +988,69 @@ contract FluffyMemory {
         if (n > _slotIds.length) n = _slotIds.length;
         out = new bytes32[](n);
         for (uint256 i = 0; i < n; i++) {
+            out[i] = _slotIds[i];
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // DISTRIBUTED STORAGE HELPERS
+    // -------------------------------------------------------------------------
+
+    function nodeCountForSlot(bytes32) external pure returns (uint256) {
+        return 0;
+    }
+
+    function attestationThreshold() external pure returns (uint256) {
+        return 2;
+    }
+
+    function isFullyReplicated(bytes32 slotId) external view returns (bool) {
+        return _slots[slotId].replicaCount >= 2;
+    }
+
+    function slotsFullyReplicated() external view returns (bytes32[] memory out) {
+        return slotsWithMinReplicas(2);
+    }
+
+    function slotsUnderReplicated() external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](_slotIds.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].replicaCount < 2) {
+                temp[count] = _slotIds[i];
+                count++;
+            }
+        }
+        out = new bytes32[](count);
+        for (uint256 j = 0; j < count; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    function underReplicatedCount() external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].replicaCount < 2) c++;
+        }
+        return c;
+    }
+
+    // -------------------------------------------------------------------------
+    // PURE: CONSTANT HASHES
+    // -------------------------------------------------------------------------
+
+    function domainSeparator() external pure returns (bytes32) {
+        return keccak256(abi.encodePacked("FluffyMemory", FM_NAMESPACE));
+    }
+
+    function slotTypeHash() external pure returns (bytes32) {
+        return keccak256("MemorySlot(bytes32 contentHash,address owner,uint256 storedAtBlock,bytes32 category,bool sealed,uint256 replicaCount)");
+    }
+
+    function storageLayoutVersion() external pure returns (bytes32) {
+        return FM_VERSION;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: GUARDIAN / ARCHIVIST CHECK
+    // -------------------------------------------------------------------------

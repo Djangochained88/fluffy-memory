@@ -790,3 +790,69 @@ contract FluffyMemory {
 
     function getOwnerLastSlot(address owner) external view returns (bytes32) {
         bytes32[] storage arr = _slotIdsByOwner[owner];
+        if (arr.length == 0) return bytes32(0);
+        return arr[arr.length - 1];
+    }
+
+    function getOwnerSlotAt(address owner, uint256 index) external view returns (bytes32) {
+        bytes32[] storage arr = _slotIdsByOwner[owner];
+        if (index >= arr.length) revert FM_SlotNotFound();
+        return arr[index];
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: REPLICA & SHARD HELPERS
+    // -------------------------------------------------------------------------
+
+    function slotsWithMinReplicas(uint256 minReplicas) external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](_slotIds.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].replicaCount >= minReplicas) {
+                temp[count] = _slotIds[i];
+                count++;
+            }
+        }
+        out = new bytes32[](count);
+        for (uint256 j = 0; j < count; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    function slotIdsWithZeroReplicas() external view returns (bytes32[] memory out) {
+        return slotsWithMinReplicas(0);
+    }
+
+    function totalReplicaCount() external view returns (uint256) {
+        uint256 t = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            t += _slots[_slotIds[i]].replicaCount;
+        }
+        return t;
+    }
+
+    function averageReplicaCount() external view returns (uint256) {
+        if (_slotIds.length == 0) return 0;
+        return totalReplicaCount() / _slotIds.length;
+    }
+
+    // -------------------------------------------------------------------------
+    // PURE: SLOT ID GENERATORS
+    // -------------------------------------------------------------------------
+
+    function slotIdFromString(string calldata s) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(s));
+    }
+
+    function slotIdFromAddressAndNonce(address account, uint256 nonce) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(account, nonce));
+    }
+
+    function slotIdFromHashAndBlock(bytes32 h, uint256 blockNum) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(h, blockNum));
+    }
+
+    function categoryFromString(string calldata s) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(s));
+    }
+

@@ -1384,3 +1384,69 @@ contract FluffyMemory {
         for (uint256 i = 0; i < _slotIds.length; i++) {
             t += _slots[_slotIds[i]].replicaCount;
         }
+        return t;
+    }
+
+    function sealedCount() external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].sealed) c++;
+        }
+        return c;
+    }
+
+    function unsealedCount() external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (!_slots[_slotIds[i]].sealed) c++;
+        }
+        return c;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: INDEX RANGE
+    // -------------------------------------------------------------------------
+
+    function slotIdAtIndex(uint256 index) external view returns (bytes32) {
+        if (index >= _slotIds.length) revert FM_SlotNotFound();
+        return _slotIds[index];
+    }
+
+    function slotIdsInIndexRange(uint256 startIndex, uint256 endIndex) external view returns (bytes32[] memory out) {
+        if (startIndex >= _slotIds.length || startIndex >= endIndex) return new bytes32[](0);
+        if (endIndex > _slotIds.length) endIndex = _slotIds.length;
+        uint256 n = endIndex - startIndex;
+        if (n > 256) n = 256;
+        out = new bytes32[](n);
+        for (uint256 i = 0; i < n; i++) {
+            out[i] = _slotIds[startIndex + i];
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // PURE: CONSTANTS EXPOSED
+    // -------------------------------------------------------------------------
+
+    function constantMaxSlots() external pure returns (uint256) {
+        return FM_MAX_SLOTS;
+    }
+
+    function constantMaxSlotsPerOwner() external pure returns (uint256) {
+        return FM_MAX_SLOTS_PER_OWNER;
+    }
+
+    function constantMaxNodes() external pure returns (uint256) {
+        return FM_MAX_NODES;
+    }
+
+    function constantMaxBatch() external pure returns (uint256) {
+        return FM_MAX_BATCH;
+    }
+
+    function constantMaxShardsPerSlot() external pure returns (uint256) {
+        return FM_MAX_SHARDS_PER_SLOT;
+    }
+
+    function constantNamespace() external pure returns (bytes32) {
+        return FM_NAMESPACE;
+    }

@@ -856,3 +856,69 @@ contract FluffyMemory {
         return keccak256(abi.encodePacked(s));
     }
 
+    function combinedHash(bytes32 a, bytes32 b, bytes32 c) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(a, b, c));
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: CHECK HELPERS
+    // -------------------------------------------------------------------------
+
+    function canStore(address account) external view returns (bool) {
+        if (slotCount >= FM_MAX_SLOTS) return false;
+        if (_slotCountByOwner[account] >= maxSlotsPerOwner) return false;
+        if (_namespacePaused[FM_NAMESPACE]) return false;
+        return true;
+    }
+
+    function remainingSlotsFor(address account) external view returns (uint256) {
+        uint256 used = _slotCountByOwner[account];
+        if (used >= maxSlotsPerOwner) return 0;
+        uint256 global = FM_MAX_SLOTS > slotCount ? FM_MAX_SLOTS - slotCount : 0;
+        uint256 perOwner = maxSlotsPerOwner - used;
+        return global < perOwner ? global : perOwner;
+    }
+
+    function globalRemainingSlots() external view returns (uint256) {
+        return slotCount >= FM_MAX_SLOTS ? 0 : FM_MAX_SLOTS - slotCount;
+    }
+
+    function isPaused() external view returns (bool) {
+        return _namespacePaused[FM_NAMESPACE];
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: SLOT SUMMARY
+    // -------------------------------------------------------------------------
+
+    function getSlotSummary(bytes32 slotId) external view returns (
+        bytes32 contentHash_,
+        address owner_,
+        uint256 storedAtBlock_,
+        bytes32 category_,
+        bool sealed_,
+        uint256 replicaCount_
+    ) {
+        MemorySlot storage s = _slots[slotId];
+        if (s.storedAtBlock == 0) revert FM_SlotNotFound();
+        contentHash_ = s.contentHash;
+        owner_ = s.owner;
+        storedAtBlock_ = s.storedAtBlock;
+        category_ = s.category;
+        sealed_ = s.sealed;
+        replicaCount_ = s.replicaCount;
+    }
+
+    function getSlotSummariesBatch(bytes32[] calldata slotIds) external view returns (
+        bytes32[] memory contentHashes_,
+        address[] memory owners_,
+        uint256[] memory storedAtBlocks_,
+        bytes32[] memory categories_,
+        bool[] memory sealed_,
+        uint256[] memory replicaCounts_
+    ) {
+        uint256 n = slotIds.length;
+        contentHashes_ = new bytes32[](n);
+        owners_ = new address[](n);
+        storedAtBlocks_ = new uint256[](n);
+        categories_ = new bytes32[](n);

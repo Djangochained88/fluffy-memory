@@ -724,3 +724,69 @@ contract FluffyMemory {
         return FM_MAX_SLOTS_PER_OWNER;
     }
 
+    function maxNodes() external pure returns (uint256) {
+        return FM_MAX_NODES;
+    }
+
+    function maxBatchSize() external pure returns (uint256) {
+        return FM_MAX_BATCH;
+    }
+
+    function maxShardsPerSlot() external pure returns (uint256) {
+        return FM_MAX_SHARDS_PER_SLOT;
+    }
+
+    function currentMaxSlotsPerOwner() external view returns (uint256) {
+        return maxSlotsPerOwner;
+    }
+
+    function guardianAddress() external view returns (address) {
+        return guardian;
+    }
+
+    function archivistAddress() external view returns (address) {
+        return archivist;
+    }
+
+    function nodeAAddress() external view returns (address) {
+        return nodeA;
+    }
+
+    function nodeBAddress() external view returns (address) {
+        return nodeB;
+    }
+
+    function nodeCAddress() external view returns (address) {
+        return nodeC;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: CATEGORY ENUMERATION
+    // -------------------------------------------------------------------------
+
+    function getFirstSlotIdInCategory(bytes32 category) external view returns (bytes32) {
+        bytes32[] storage arr = _slotIdsByCategory[category];
+        if (arr.length == 0) return bytes32(0);
+        return arr[0];
+    }
+
+    function getLastSlotIdInCategory(bytes32 category) external view returns (bytes32) {
+        bytes32[] storage arr = _slotIdsByCategory[category];
+        if (arr.length == 0) return bytes32(0);
+        return arr[arr.length - 1];
+    }
+
+    function getSlotIdInCategoryAt(bytes32 category, uint256 index) external view returns (bytes32) {
+        bytes32[] storage arr = _slotIdsByCategory[category];
+        if (index >= arr.length) revert FM_SlotNotFound();
+        return arr[index];
+    }
+
+    function getOwnerFirstSlot(address owner) external view returns (bytes32) {
+        bytes32[] storage arr = _slotIdsByOwner[owner];
+        if (arr.length == 0) return bytes32(0);
+        return arr[0];
+    }
+
+    function getOwnerLastSlot(address owner) external view returns (bytes32) {
+        bytes32[] storage arr = _slotIdsByOwner[owner];

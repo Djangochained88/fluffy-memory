@@ -1582,3 +1582,69 @@ contract FluffyMemory {
 
     function minReplicaCountAmongSlots() external view returns (uint256) {
         if (_slotIds.length == 0) return 0;
+        uint256 m = type(uint256).max;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            uint256 r = _slots[_slotIds[i]].replicaCount;
+            if (r < m) m = r;
+        }
+        return m;
+    }
+
+    function slotIdsWithReplicaCount(uint256 replicaCount) external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](_slotIds.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].replicaCount == replicaCount) {
+                temp[count] = _slotIds[i];
+                count++;
+            }
+        }
+        out = new bytes32[](count);
+        for (uint256 j = 0; j < count; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: NAMESPACE PAUSE
+    // -------------------------------------------------------------------------
+
+    function namespaceIsPaused(bytes32 ns) external view returns (bool) {
+        return _namespacePaused[ns];
+    }
+
+    function defaultNamespacePaused() external view returns (bool) {
+        return _namespacePaused[FM_NAMESPACE];
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: GUARDIAN / ROLES
+    // -------------------------------------------------------------------------
+
+    function getGuardian() external view returns (address) {
+        return guardian;
+    }
+
+    function getArchivist() external view returns (address) {
+        return archivist;
+    }
+
+    function getNodeA() external view returns (address) {
+        return nodeA;
+    }
+
+    function getNodeB() external view returns (address) {
+        return nodeB;
+    }
+
+    function getNodeC() external view returns (address) {
+        return nodeC;
+    }
+
+    function getDeployBlock() external view returns (uint256) {
+        return deployBlock;
+    }
+
+    // -------------------------------------------------------------------------
+    // PURE: VERSION / DOMAIN
+    // -------------------------------------------------------------------------

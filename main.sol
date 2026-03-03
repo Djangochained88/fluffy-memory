@@ -1516,3 +1516,69 @@ contract FluffyMemory {
                 temp[count] = slotIds[i];
                 count++;
             }
+        }
+        out = new bytes32[](count);
+        for (uint256 j = 0; j < count; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: CATEGORY EXISTS
+    // -------------------------------------------------------------------------
+
+    function categoryHasSlots(bytes32 category) external view returns (bool) {
+        return _slotIdsByCategory[category].length > 0;
+    }
+
+    function categorySlotCount(bytes32 category) external view returns (uint256) {
+        return _slotIdsByCategory[category].length;
+    }
+
+    function ownerHasSlots(address owner) external view returns (bool) {
+        return _slotCountByOwner[owner] > 0;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: SHARD INDEX HELPERS
+    // -------------------------------------------------------------------------
+
+    function shardIndexValid(uint256 shardIndex) external pure returns (bool) {
+        return shardIndex < FM_MAX_SHARDS_PER_SLOT;
+    }
+
+    function maxShardIndex() external pure returns (uint256) {
+        return FM_MAX_SHARDS_PER_SLOT - 1;
+    }
+
+    // -------------------------------------------------------------------------
+    // PURE: SLOT ID FROM PARTS
+    // -------------------------------------------------------------------------
+
+    function deriveSlotId(bytes32 contentHash, address owner, bytes32 category, uint256 salt) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(contentHash, owner, category, salt));
+    }
+
+    function deriveSlotIdSimple(bytes32 contentHash, address owner) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(contentHash, owner));
+    }
+
+    function deriveCategory(bytes32 parent, bytes32 child) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(parent, child));
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: REPLICA STATS
+    // -------------------------------------------------------------------------
+
+    function maxReplicaCountAmongSlots() external view returns (uint256) {
+        uint256 m = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            uint256 r = _slots[_slotIds[i]].replicaCount;
+            if (r > m) m = r;
+        }
+        return m;
+    }
+
+    function minReplicaCountAmongSlots() external view returns (uint256) {
+        if (_slotIds.length == 0) return 0;

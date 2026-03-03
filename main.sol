@@ -1780,3 +1780,69 @@ contract FluffyMemory {
         for (uint256 i = 0; i < _slotIds.length; i++) {
             MemorySlot storage s = _slots[_slotIds[i]];
             if (s.replicaCount >= 2 && s.sealed) {
+                temp[count] = _slotIds[i];
+                count++;
+            }
+        }
+        out = new bytes32[](count);
+        for (uint256 j = 0; j < count; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    function memoryLayoutVersion() external pure returns (bytes32) {
+        return FM_VERSION;
+    }
+
+    function storageNamespace() external pure returns (bytes32) {
+        return FM_NAMESPACE;
+    }
+
+    function maxSlotsAllowed() external pure returns (uint256) {
+        return FM_MAX_SLOTS;
+    }
+
+    function maxBatchAllowed() external pure returns (uint256) {
+        return FM_MAX_BATCH;
+    }
+
+    function shardLimitPerSlot() external pure returns (uint256) {
+        return FM_MAX_SHARDS_PER_SLOT;
+    }
+
+    function canAcceptSlots() external view returns (bool) {
+        return slotCount < FM_MAX_SLOTS && !_namespacePaused[FM_NAMESPACE];
+    }
+
+    function slotCapacityRemaining() external view returns (uint256) {
+        return slotCount >= FM_MAX_SLOTS ? 0 : FM_MAX_SLOTS - slotCount;
+    }
+
+    function ownerCapacityRemaining(address owner) external view returns (uint256) {
+        uint256 used = _slotCountByOwner[owner];
+        return used >= maxSlotsPerOwner ? 0 : maxSlotsPerOwner - used;
+    }
+
+    function effectiveRemainingFor(address owner) external view returns (uint256) {
+        uint256 global = slotCapacityRemaining();
+        uint256 perOwner = ownerCapacityRemaining(owner);
+        return global < perOwner ? global : perOwner;
+    }
+
+    function slotIdFromKeccak(bytes32 h) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked("slot", h));
+    }
+
+    function categoryFromKeccak(bytes32 h) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked("cat", h));
+    }
+
+    function contentHashFromBytes(bytes calldata data) external pure returns (bytes32) {
+        return keccak256(data);
+    }
+
+    function contentHashFromPacked(bytes32 a, bytes32 b) external pure returns (bytes32) {
+        return keccak256(abi.encodePacked(a, b));
+    }
+
+    function isSlotSealed(bytes32 slotId) external view returns (bool) {

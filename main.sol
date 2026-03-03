@@ -1318,3 +1318,69 @@ contract FluffyMemory {
         bytes32[] memory contentHashes,
         address[] memory owners,
         bytes32[] memory categories
+    ) {
+        uint256 n = slotIds.length;
+        contentHashes = new bytes32[](n);
+        owners = new address[](n);
+        categories = new bytes32[](n);
+        for (uint256 i = 0; i < n; i++) {
+            MemorySlot storage s = _slots[slotIds[i]];
+            contentHashes[i] = s.contentHash;
+            owners[i] = s.owner;
+            categories[i] = s.category;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: EXISTS & OWNERSHIP
+    // -------------------------------------------------------------------------
+
+    function ownerOf(bytes32 slotId) external view returns (address) {
+        return _slots[slotId].owner;
+    }
+
+    function categoryOf(bytes32 slotId) external view returns (bytes32) {
+        return _slots[slotId].category;
+    }
+
+    function contentHashOf(bytes32 slotId) external view returns (bytes32) {
+        return _slots[slotId].contentHash;
+    }
+
+    function storedBlockOf(bytes32 slotId) external view returns (uint256) {
+        return _slots[slotId].storedAtBlock;
+    }
+
+    function sealedOf(bytes32 slotId) external view returns (bool) {
+        return _slots[slotId].sealed;
+    }
+
+    function replicaCountOf(bytes32 slotId) external view returns (uint256) {
+        return _slots[slotId].replicaCount;
+    }
+
+    function isOwner(bytes32 slotId, address account) external view returns (bool) {
+        return _slots[slotId].owner == account;
+    }
+
+    function isCategory(bytes32 slotId, bytes32 category) external view returns (bool) {
+        return _slots[slotId].category == category;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: GLOBAL STATS
+    // -------------------------------------------------------------------------
+
+    function totalSlots() external view returns (uint256) {
+        return _slotIds.length;
+    }
+
+    function totalNodes() external view returns (uint256) {
+        return _nodeList.length;
+    }
+
+    function totalReplicas() external view returns (uint256) {
+        uint256 t = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            t += _slots[_slotIds[i]].replicaCount;
+        }

@@ -1648,3 +1648,69 @@ contract FluffyMemory {
     // -------------------------------------------------------------------------
     // PURE: VERSION / DOMAIN
     // -------------------------------------------------------------------------
+
+    function getNamespace() external pure returns (bytes32) {
+        return FM_NAMESPACE;
+    }
+
+    function getVersion() external pure returns (bytes32) {
+        return FM_VERSION;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: SLOT BY INDEX (alias)
+    // -------------------------------------------------------------------------
+
+    function slotAt(uint256 index) external view returns (bytes32) {
+        if (index >= _slotIds.length) revert FM_SlotNotFound();
+        return _slotIds[index];
+    }
+
+    function totalSlotCountView() external view returns (uint256) {
+        return _slotIds.length;
+    }
+
+    function nodeListLength() external view returns (uint256) {
+        return _nodeList.length;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: BATCH CONTENT HASH VERIFY
+    // -------------------------------------------------------------------------
+
+    function verifyContentHashesBatch(bytes32[] calldata slotIds, bytes32[] calldata expectedHashes) external view returns (bool[] memory matches) {
+        if (slotIds.length != expectedHashes.length) revert FM_InvalidBatchLength();
+        matches = new bool[](slotIds.length);
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            matches[i] = _slots[slotIds[i]].contentHash == expectedHashes[i];
+        }
+    }
+
+    function allContentHashesMatch(bytes32[] calldata slotIds, bytes32[] calldata expectedHashes) external view returns (bool) {
+        if (slotIds.length != expectedHashes.length) return false;
+        for (uint256 i = 0; i < slotIds.length; i++) {
+            if (_slots[slotIds[i]].contentHash != expectedHashes[i]) return false;
+        }
+        return true;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: OWNER BATCH SLOT COUNT
+    // -------------------------------------------------------------------------
+
+    function getSlotCountsForOwners(address[] calldata owners) external view returns (uint256[] memory counts) {
+        counts = new uint256[](owners.length);
+        for (uint256 i = 0; i < owners.length; i++) {
+            counts[i] = _slotCountByOwner[owners[i]];
+        }
+    }
+
+    function getCategoryCountsForCategories(bytes32[] calldata categories) external view returns (uint256[] memory counts) {
+        counts = new uint256[](categories.length);
+        for (uint256 i = 0; i < categories.length; i++) {
+            counts[i] = _slotIdsByCategory[categories[i]].length;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: FLUFFY MEMORY INDEX HELPERS (AI organised)

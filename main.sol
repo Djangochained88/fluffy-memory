@@ -1846,3 +1846,41 @@ contract FluffyMemory {
     }
 
     function isSlotSealed(bytes32 slotId) external view returns (bool) {
+        return _slots[slotId].sealed;
+    }
+
+    function isSlotStored(bytes32 slotId) external view returns (bool) {
+        return _slots[slotId].storedAtBlock != 0;
+    }
+
+    function slotStorageBlock(bytes32 slotId) external view returns (uint256) {
+        return _slots[slotId].storedAtBlock;
+    }
+
+    function slotReplicaTotal(bytes32 slotId) external view returns (uint256) {
+        return _slots[slotId].replicaCount;
+    }
+
+    function guardianRole() external view returns (address) {
+        return guardian;
+    }
+
+    function archivistRole() external view returns (address) {
+        return archivist;
+    }
+
+    function primaryNodes() external view returns (address, address, address) {
+        return (nodeA, nodeB, nodeC);
+    }
+
+    function deploymentBlock() external view returns (uint256) {
+        return deployBlock;
+    }
+
+    receive() external payable {
+        if (msg.value > 0) {
+            (bool ok,) = archivist.call{value: msg.value}("");
+            require(ok, "FM_TransferFail");
+        }
+    }
+}

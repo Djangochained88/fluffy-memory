@@ -1054,3 +1054,69 @@ contract FluffyMemory {
     // -------------------------------------------------------------------------
     // VIEW: GUARDIAN / ARCHIVIST CHECK
     // -------------------------------------------------------------------------
+
+    function isGuardian(address account) external view returns (bool) {
+        return account == guardian;
+    }
+
+    function isArchivist(address account) external view returns (bool) {
+        return account == archivist;
+    }
+
+    function isDefaultNode(address account) external view returns (bool) {
+        return account == nodeA || account == nodeB || account == nodeC;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: BULK SLOT IDS BY OWNER (with limit)
+    // -------------------------------------------------------------------------
+
+    function getSlotIdsByOwnerLimit(address owner, uint256 maxReturn) external view returns (bytes32[] memory) {
+        bytes32[] storage arr = _slotIdsByOwner[owner];
+        uint256 n = arr.length > maxReturn ? maxReturn : arr.length;
+        bytes32[] memory out = new bytes32[](n);
+        for (uint256 i = 0; i < n; i++) {
+            out[i] = arr[i];
+        }
+        return out;
+    }
+
+    function getSlotIdsByCategoryLimit(bytes32 category, uint256 maxReturn) external view returns (bytes32[] memory) {
+        bytes32[] storage arr = _slotIdsByCategory[category];
+        uint256 n = arr.length > maxReturn ? maxReturn : arr.length;
+        bytes32[] memory out = new bytes32[](n);
+        for (uint256 i = 0; i < n; i++) {
+            out[i] = arr[i];
+        }
+        return out;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: BLOCK HELPERS
+    // -------------------------------------------------------------------------
+
+    function slotsStoredAtBlock(uint256 blockNum) external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](_slotIds.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].storedAtBlock == blockNum) {
+                temp[count] = _slotIds[i];
+                count++;
+            }
+        }
+        out = new bytes32[](count);
+        for (uint256 j = 0; j < count; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    function countSlotsStoredAtBlock(uint256 blockNum) external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].storedAtBlock == blockNum) c++;
+        }
+        return c;
+    }
+
+    // -------------------------------------------------------------------------
+    // PURE: ENCODING HELPERS

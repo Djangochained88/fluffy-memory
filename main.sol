@@ -922,3 +922,69 @@ contract FluffyMemory {
         owners_ = new address[](n);
         storedAtBlocks_ = new uint256[](n);
         categories_ = new bytes32[](n);
+        sealed_ = new bool[](n);
+        replicaCounts_ = new uint256[](n);
+        for (uint256 i = 0; i < n; i++) {
+            MemorySlot storage s = _slots[slotIds[i]];
+            contentHashes_[i] = s.contentHash;
+            owners_[i] = s.owner;
+            storedAtBlocks_[i] = s.storedAtBlock;
+            categories_[i] = s.category;
+            sealed_[i] = s.sealed;
+            replicaCounts_[i] = s.replicaCount;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: INDEX BY CONTENT HASH (linear scan)
+    // -------------------------------------------------------------------------
+
+    function slotIdsWithContentHash(bytes32 contentHash) external view returns (bytes32[] memory out) {
+        bytes32[] memory temp = new bytes32[](_slotIds.length);
+        uint256 count = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].contentHash == contentHash) {
+                temp[count] = _slotIds[i];
+                count++;
+            }
+        }
+        out = new bytes32[](count);
+        for (uint256 j = 0; j < count; j++) {
+            out[j] = temp[j];
+        }
+    }
+
+    function firstSlotIdWithContentHash(bytes32 contentHash) external view returns (bytes32) {
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].contentHash == contentHash) return _slotIds[i];
+        }
+        return bytes32(0);
+    }
+
+    function countSlotsWithContentHash(bytes32 contentHash) external view returns (uint256) {
+        uint256 c = 0;
+        for (uint256 i = 0; i < _slotIds.length; i++) {
+            if (_slots[_slotIds[i]].contentHash == contentHash) c++;
+        }
+        return c;
+    }
+
+    // -------------------------------------------------------------------------
+    // VIEW: RECENT SLOTS
+    // -------------------------------------------------------------------------
+
+    function latestSlotIds(uint256 n) external view returns (bytes32[] memory out) {
+        if (n == 0 || _slotIds.length == 0) return new bytes32[](0);
+        if (n > _slotIds.length) n = _slotIds.length;
+        out = new bytes32[](n);
+        uint256 start = _slotIds.length - n;
+        for (uint256 i = 0; i < n; i++) {
+            out[i] = _slotIds[start + i];
+        }
+    }
+
+    function oldestSlotIds(uint256 n) external view returns (bytes32[] memory out) {
+        if (n == 0 || _slotIds.length == 0) return new bytes32[](0);
+        if (n > _slotIds.length) n = _slotIds.length;
+        out = new bytes32[](n);
+        for (uint256 i = 0; i < n; i++) {
